@@ -26,7 +26,7 @@ rows_per_patient = data.groupby('patient_nbr')["encounter_id"].count()
 data = data.merge(rows_per_patient, on='patient_nbr', suffixes=("", "_count"))
 data["running_count"] = data.groupby("patient_nbr").cumcount()
 
-data["target"] = data["readmitted"] != "NO"
+data["target"] = data["readmitted"] == "<30"
 data.set_index("encounter_id", inplace=True)
 
 not_train_columns = [
@@ -64,7 +64,6 @@ model = CatBoostClassifier(
     loss_function='Logloss',
     logging_level='Verbose',
     cat_features=categorical_features,
-    eval_metric="Accuracy",
     early_stopping_rounds=10,
     l2_leaf_reg=0.1
     )
