@@ -1,2 +1,4 @@
 .ipynb_checkpoints
 notebooks/catboost_info/
+.vscode/
+catboost_info/
