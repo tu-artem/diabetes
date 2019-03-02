@@ -7,8 +7,10 @@ from sklearn.preprocessing import OneHotEncoder, Normalizer
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.pipeline import make_pipeline
 
-from catboost import CatBoostClassifier
+import xgboost as xgb
+from xgboost import XGBClassifier
 
 SAVE_MODELS = True
 
@@ -64,48 +66,50 @@ x_train, x_test, y_train, y_test = train_test_split(
 cat = [t != "int64" for t in x_train.dtypes]
 num = [t == "int64" for t in x_train.dtypes]
 
+cat_names = x_train.columns[cat]
+num_names = x_train.columns[num]
+
+
 transformer = ColumnTransformer(
-    [("cat",  OneHotEncoder(handle_unknown="ignore"), cat),
-     ("num", Normalizer(), num)]
+    [("num", Normalizer(), num),
+    ("cat",  OneHotEncoder(handle_unknown="ignore"), cat)],
 )
 
 x_train = transformer.fit_transform(x_train)
 x_test = transformer.transform(x_test)
 
 
-model = CatBoostClassifier(
-    iterations=100,
-    depth=5,
-    learning_rate=0.1,
-    loss_function='Logloss',
-    logging_level='Verbose',
-   # cat_features=categorical_features,
-    early_stopping_rounds=10,
-    l2_leaf_reg=0.1
-    )
+cat_names = transformer.transformers_[1][1].get_feature_names(cat_names)
+
+all_feature_names = list(num_names)
+all_feature_names.extend(cat_names)
+
+model = XGBClassifier(
+    max_depth=5,
+    early_stopping_rounds=10)
 
 
-y_train_int = [int(x) for x in y_train.to_list()]
-y_test_int = [int(x) for x in y_test.to_list()]
+# y_train_int = [int(x) for x in y_train.to_list()]
+# y_test_int = [int(x) for x in y_test.to_list()]
 
-model.fit(x_train.toarray(),
-          y_train_int,
-          eval_set=(x_test.toarray(), y_test_int)
-          )
+model.fit(x_train,
+          y_train,
+          eval_set=[(x_train, y_train), (x_test, y_test)],
+          verbose=True)
 
 # y_train_int = [int(x) for x in y_train.to_list()]
 # y_test_int = [int(x) for x in y_test.to_list()]
 
 # model.fit(x_train.toarray(), y_train_int)
 
-print(roc_auc_score(y_test.to_list(), model.predict_proba(x_test.toarray())[:, 1]))
-print(accuracy_score(y_test.to_list(), model.predict(x_test.toarray())))
+print(roc_auc_score(y_test, model.predict_proba(x_test)[:, 1]))
+print(accuracy_score(y_test, model.predict(x_test)))
 # print(accuracy_score(y_train_int, model.predict(x_train.toarray())))
 # print(accuracy_score(y_test_int, model.predict(x_test.toarray())))
 
 
 if SAVE_MODELS:
-    model.save_model("models/model.cbm")
+    model.save_model("models/model.xgb")
 
     with open("models/transformer.pcl", "wb") as f:
         pickle.dump(transformer, f)
