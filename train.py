@@ -1,20 +1,39 @@
 import pickle
+import json
 
 import pandas as pd
-#import numpy as np
+import numpy as np
+
 
 from sklearn.preprocessing import OneHotEncoder, Normalizer
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.pipeline import make_pipeline
 
-import xgboost as xgb
 from xgboost import XGBClassifier
+
+from utils import evaluate_model
 
 SAVE_MODELS = True
 
 data = pd.read_csv("data/raw/Chapter_3_Diabetes_data.csv", low_memory=False)
+
+data["race"] = data["race"].fillna("Other")
+data["medical_specialty"] = data["medical_specialty"].fillna("NA")
+data["payer_code"] = data["payer_code"].fillna("NA")
+
+age_mapping = {
+    "[0-10)": 10,
+    "[10-20)": 20,
+    "[20-30)": 30,
+    "[30-40)": 40,
+    "[40-50)": 50,
+    "[50-60)": 60,
+    "[60-70)": 70,
+    "[70-80)": 80,
+    "[80-90)": 90,
+    "[90-100)": 100
+}
+data["age"] = data["age"].replace(age_mapping)
 
 categorical = [
     "encounter_id",
@@ -44,14 +63,14 @@ not_train_columns = [
            "diag_2",
            "diag_3",
            "change",
+           "examide",
+           "citoglipton",
            "diabetesMed",
-           "running_count",
            "readmitted",
+           "running_count",
            "encounter_id_count",
            "target"]
 
-data["race"] = data["race"].fillna("NA")
-data["medical_specialty"] = data["medical_specialty"].fillna("NA")
 
 data = data.sort_values(by="encounter_id")
 
@@ -59,7 +78,7 @@ x_train, x_test, y_train, y_test = train_test_split(
     data.drop(not_train_columns, axis=1),
     data["target"],
     shuffle=False,
-    test_size=0.30)
+    test_size=0.20)
 
 # categorical_features = np.where(x_train.dtypes != "int64")[0]
 
@@ -71,13 +90,12 @@ num_names = x_train.columns[num]
 
 
 transformer = ColumnTransformer(
-    [("num", Normalizer(), num),
-    ("cat",  OneHotEncoder(handle_unknown="ignore"), cat)],
+     [("num", Normalizer(), num),
+      ("cat",  OneHotEncoder(handle_unknown="ignore"), cat)],
 )
 
-x_train = transformer.fit_transform(x_train)
-x_test = transformer.transform(x_test)
-
+x_train = transformer.fit_transform(x_train).toarray()
+x_test = transformer.transform(x_test).toarray()
 
 cat_names = transformer.transformers_[1][1].get_feature_names(cat_names)
 
@@ -86,7 +104,8 @@ all_feature_names.extend(cat_names)
 
 model = XGBClassifier(
     max_depth=5,
-    early_stopping_rounds=10)
+    early_stopping_rounds=10,
+    scale_pos_weight=3)
 
 
 # y_train_int = [int(x) for x in y_train.to_list()]
@@ -102,14 +121,18 @@ model.fit(x_train,
 
 # model.fit(x_train.toarray(), y_train_int)
 
-print(roc_auc_score(y_test, model.predict_proba(x_test)[:, 1]))
-print(accuracy_score(y_test, model.predict(x_test)))
+print(evaluate_model(y_test, model.predict_proba(x_test)[:, 1]))
+
 # print(accuracy_score(y_train_int, model.predict(x_train.toarray())))
 # print(accuracy_score(y_test_int, model.predict(x_test.toarray())))
-
 
 if SAVE_MODELS:
     model.save_model("models/model.xgb")
 
     with open("models/transformer.pcl", "wb") as f:
         pickle.dump(transformer, f)
+
+    np.save("data/processed/x_train.np", x_train)
+
+    with open("data/processed/features.json", "w") as f:
+        json.dump(all_feature_names, f)

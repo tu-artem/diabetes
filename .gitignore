@@ -2,3 +2,6 @@
 notebooks/catboost_info/
 .vscode/
 catboost_info/
+
+__pycache__
+models/
