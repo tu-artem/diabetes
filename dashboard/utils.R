@@ -15,8 +15,9 @@ age_range <- function(age) {
 
 test_df <- tibble::tribble(
   ~race,  ~gender,      ~age, ~admission_type_id, ~discharge_disposition_id, ~admission_source_id, ~time_in_hospital, ~num_lab_procedures, ~num_procedures, ~num_medications, ~number_outpatient, ~number_emergency, ~number_inpatient, ~number_diagnoses, ~max_glu_serum, ~A1Cresult, ~metformin, ~repaglinide, ~nateglinide, ~chlorpropamide, ~glimepiride, ~acetohexamide, ~glipizide, ~glyburide, ~tolbutamide, ~pioglitazone, ~rosiglitazone, ~acarbose, ~miglitol, ~troglitazone, ~tolazamide, ~examide, ~citoglipton, ~insulin, ~`glyburide-metformin`, ~`glipizide-metformin`, ~`glimepiride-pioglitazone`, ~`metformin-rosiglitazone`, ~`metformin-pioglitazone`,
-  "Caucasian", "Female", "[80-90)",                 2L,                        3L,                   7L,                6L,                 68L,              0L,              14L,                 0L,                0L,                0L,                9L,         "None",       ">7",       "No",         "No",         "No",            "No",         "No",           "No",       "No",       "No",         "No",          "No",           "No",      "No",      "No",          "No",        "No",     "No",         "No",     "No",                 "No",                 "No",                      "No",                     "No",                    "No"
+  "Caucasian", "Female", 22,                 2L,                        3L,                   7L,                6L,                 68L,              0L,              14L,                 0L,                0L,                0L,                9L,         "None",       ">7",       "No",         "No",         "No",            "No",         "No",           "No",       "No",       "No",         "No",          "No",           "No",      "No",      "No",          "No",        "No",     "No",         "No",     "No",                 "No",                 "No",                      "No",                     "No",                    "No"
 )
+
 
 
 get_prediction <- function(df, url="http://127.0.0.1:5000/predict") {

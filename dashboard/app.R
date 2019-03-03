@@ -75,7 +75,7 @@ server <- function(input, output, session) {
     
     df <- tibble(race=input$race, 
                  gender=input$gender,
-                 age=age_range(input$age))
+                 age=input$age)
     
     df2 <- read_csv(input$file1$datapath)
     
