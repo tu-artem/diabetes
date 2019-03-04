@@ -94,8 +94,8 @@ transformer = ColumnTransformer(
       ("cat",  OneHotEncoder(handle_unknown="ignore"), cat)],
 )
 
-x_train = transformer.fit_transform(x_train).toarray()
-x_test = transformer.transform(x_test).toarray()
+x_train = transformer.fit_transform(x_train)
+x_test = transformer.transform(x_test)
 
 cat_names = transformer.transformers_[1][1].get_feature_names(cat_names)
 
@@ -105,7 +105,8 @@ all_feature_names.extend(cat_names)
 model = XGBClassifier(
     max_depth=5,
     early_stopping_rounds=10,
-    scale_pos_weight=3)
+    scale_pos_weight=3,
+    min_child_weight=1)
 
 
 # y_train_int = [int(x) for x in y_train.to_list()]
@@ -127,7 +128,10 @@ print(evaluate_model(y_test, model.predict_proba(x_test)[:, 1]))
 # print(accuracy_score(y_test_int, model.predict(x_test.toarray())))
 
 if SAVE_MODELS:
-    model.save_model("models/model.xgb")
+    #model.save_model("models/model.xgb")
+
+    with open("models/model.pcl", "wb") as f:
+        pickle.dump(model, f)
 
     with open("models/transformer.pcl", "wb") as f:
         pickle.dump(transformer, f)
