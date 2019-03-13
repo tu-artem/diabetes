@@ -1,6 +1,0 @@
-Potential target variables:
-    change
-    diabetesMed
-    readmitted
-    
-"No" value in many fields - missing?

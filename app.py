@@ -29,6 +29,7 @@ def predict():
     data = request.get_json(force=True)
     # app.logger.info(data)
     df = pd.DataFrame(data, index=[0])
+    app.logger.info(df.iloc[0])
     data_array = transformer.transform(df)
 
     prediction = model.predict_proba(data_array)
@@ -46,9 +47,9 @@ def explain():
     
     exp = explain_prediction(
         model,
-        data_array[0], 
+        data_array[0],
         feature_names=all_feature_names,
-        top=(5,5),
+        top=(5, 5),
         targets=[True])
 
     output = format_as_dataframe(exp).to_dict()

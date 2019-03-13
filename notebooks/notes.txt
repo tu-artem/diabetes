@@ -1,3 +1,0 @@
-Each row represents a patient's visit to hospital
-One patient may be represented several times
-There are patients with changes in diabetesMed

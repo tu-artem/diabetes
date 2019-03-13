@@ -7,7 +7,6 @@ from sklearn.metrics import (accuracy_score,
                              precision_score,
                              recall_score)
 
-
 def evaluate_model(y_true, y_pred_prob, threshhold=0.5):
     accuracy = accuracy_score(y_true, y_pred_prob > threshhold)
     auc_score = roc_auc_score(y_true, y_pred_prob)
@@ -31,7 +30,7 @@ def plot_curve(y_true, **predictions):
     for name, prediction in predictions.items():
         fpr, tpr, _ = roc_curve(y_true, prediction)
         roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, lw=lw, label=f'{name} (area = {roc_auc:.2f})')
+        plt.plot(fpr, tpr, lw=lw, label=f'{name} (area = {roc_auc:.3f})')
 
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])
