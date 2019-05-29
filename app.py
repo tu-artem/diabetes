@@ -1,10 +1,10 @@
 import pandas as pd
-import numpy as np
+# import numpy as np
 from flask import Flask, request, jsonify
-from xgboost import XGBClassifier
+# from xgboost import XGBClassifier
 import pickle
 import json
-from eli5 import format_as_dict, explain_prediction, format_as_dataframe
+from eli5 import explain_prediction, format_as_dataframe
 
 app = Flask(__name__)
 
@@ -14,7 +14,6 @@ app = Flask(__name__)
 with open("models/model.pcl", "rb") as f:
     model = pickle.load(f)
 
-#x_train = np.load("data/processed/x_train.npy")
 with open("data/processed/features.json") as f:
     all_feature_names = json.load(f)
 
@@ -44,7 +43,7 @@ def explain():
     # app.logger.info(data)
     df = pd.DataFrame(data, index=[0])
     data_array = transformer.transform(df)
-    
+
     exp = explain_prediction(
         model,
         data_array[0],
@@ -54,6 +53,7 @@ def explain():
 
     output = format_as_dataframe(exp).to_dict()
     return jsonify(output)
+
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

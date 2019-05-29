@@ -1,18 +1,31 @@
-import pickle
-import json
-
+# import pickle
+# import json
+# import logging
+import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import roc_auc_score, make_scorer
 
 from xgboost import XGBClassifier
 
 from utils import evaluate_model
 
-SAVE_MODELS = True
+from hyperopt import hp, fmin, tpe, STATUS_OK, Trials
 
+# logger = logging.getLogger('diabetes')
+# logger.setLevel(logging.DEBUG)
+# # create file handler which logs even debug messages
+# fh = logging.FileHandler('tuning.log')
+# fh.setLevel(logging.DEBUG)
+# logger.addHandler(fh)
+
+roc_auc_scorer = make_scorer(roc_auc_score, needs_proba=True)
+
+
+# logger.info("Starting data preprocessing")
 data = pd.read_csv("data/raw/Chapter_3_Diabetes_data.csv", low_memory=False)
 
 data["race"] = data["race"].fillna("Other")
@@ -72,7 +85,7 @@ not_train_columns = [
 
 data = data.sort_values(by="encounter_id")
 
-x_train, x_test, y_train, y_test = train_test_split(
+x_train, _, y_train,_ = train_test_split(
     data.drop(not_train_columns, axis=1),
     data["target"],
     shuffle=False,
@@ -92,36 +105,61 @@ transformer = ColumnTransformer(
 )
 
 x_train = transformer.fit_transform(x_train)
-x_test = transformer.transform(x_test)
+
 
 cat_names = transformer.transformers_[1][1].get_feature_names(cat_names)
 
 all_feature_names = list(num_names)
 all_feature_names.extend(cat_names)
 
-model = XGBClassifier(
-    max_depth=5,
-    n_estimators=100,
-    min_child_weight=3,
-    colsample_bytree=0.68,
-    subsample=0.63
+# logger.info("Starting cross-validation")
+
+
+
+# logger.info("Parameters: %s", params)
+
+
+
+# logger.info("Cross-validation ROC-AUC %s", cv)
+
+def objective(space):
+
+    model = XGBClassifier(**space)
+
+    cv = cross_val_score(
+        model,
+        x_train,
+        y_train,
+        scoring=roc_auc_scorer,
+        cv=3
     )
 
+    avg_score = np.mean(cv)
+    
+    print(f"SCORE: {avg_score}")
 
-model.fit(x_train,
-          y_train,
-          eval_set=[(x_train, y_train), (x_test, y_test)],
-          verbose=True)
-
-print(evaluate_model(y_test, model.predict_proba(x_test)[:, 1]))
+    return{'loss': 1 - avg_score, 'status': STATUS_OK}
 
 
-if SAVE_MODELS:
-    with open("models/model.pcl", "wb") as f:
-        pickle.dump(model, f)
+params = {
+    "max_depth": 5,
+    "n_estimators": 10,
+    "min_child_weight": 3,
+    "colsample_bytree": 0.68,
+    "subsample": 0.63
+}
 
-    with open("models/transformer.pcl", "wb") as f:
-        pickle.dump(transformer, f)
+space = {
+    'max_depth': hp.choice('max_depth', range(12, 3, -2)),
+    'min_child_weight': hp.quniform('min_child', 1, 5, 1),
+    'subsample': hp.uniform('subsample', 0.5, 0.7)
+}
 
-    with open("data/processed/features.json", "w") as f:
-        json.dump(all_feature_names, f)
+trials = Trials()
+best = fmin(fn=objective,
+            space=space,
+            algo=tpe.suggest,
+            max_evals=5,
+            trials=trials)
+
+print(best)

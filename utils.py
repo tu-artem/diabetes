@@ -7,6 +7,7 @@ from sklearn.metrics import (accuracy_score,
                              precision_score,
                              recall_score)
 
+
 def evaluate_model(y_true, y_pred_prob, threshhold=0.5):
     accuracy = accuracy_score(y_true, y_pred_prob > threshhold)
     auc_score = roc_auc_score(y_true, y_pred_prob)
